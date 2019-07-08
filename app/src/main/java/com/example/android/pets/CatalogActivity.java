@@ -41,7 +41,11 @@ public class CatalogActivity extends AppCompatActivity {
         // To access our database, we instantiate our subclass of SQLiteOpenHelper
         // and pass the context, which is the current activity.
         mMDbHelper = new PetDbHelper(this);
+    }
 
+    @Override
+    protected void onStart() {
+        super.onStart();
         displayDatabaseInfo();
     }
 
@@ -95,7 +99,7 @@ public class CatalogActivity extends AppCompatActivity {
     }
 
     private void insertData() {
-        /** Gets the database repository in write mode */
+        // Gets the database repository in write mode
         SQLiteDatabase db = mMDbHelper.getWritableDatabase();
 
         ContentValues values = new ContentValues();
