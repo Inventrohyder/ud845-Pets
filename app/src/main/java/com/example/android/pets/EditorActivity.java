@@ -156,22 +156,23 @@ public class EditorActivity extends AppCompatActivity {
     }
 
     private void insertPet() {
+        // Read from input fields
+        // Use trim to eliminate and leading and trailing white spaces
         String petName = mNameEditText.getText().toString().trim();
         String petBreed = mBreedEditText.getText().toString().trim();
-        int petGender = mGender;
         int petWeight = Integer.parseInt(mWeightEditText.getText().toString().trim());
 
         // Gets the database repository in write mode
         SQLiteDatabase db = mMDbHelper.getWritableDatabase();
 
         ContentValues values = new ContentValues();
-        values.put(PetEntry.COLUMN_PET_NAME, "Toto");
-        values.put(PetEntry.COLUMN_PET_BREED, "Terrier");
-        values.put(PetEntry.COLUMN_PET_GENDER, PetEntry.GENDER_MALE);
-        values.put(PetEntry.COLUMN_PET_WEIGHT, 7);
+        values.put(PetEntry.COLUMN_PET_NAME, petName);
+        values.put(PetEntry.COLUMN_PET_BREED, petBreed);
+        values.put(PetEntry.COLUMN_PET_GENDER, mGender);
+        values.put(PetEntry.COLUMN_PET_WEIGHT, petWeight);
 
         long newRowId = db.insert(PetEntry.TABLE_NAME, null, values);
-        String message = "";
+        String message;
         if (newRowId == -1) {
             message = "Error with saving pet";
         } else {
