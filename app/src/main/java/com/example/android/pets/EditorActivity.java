@@ -171,6 +171,7 @@ public class EditorActivity extends AppCompatActivity {
         values.put(PetEntry.COLUMN_PET_GENDER, mGender);
         values.put(PetEntry.COLUMN_PET_WEIGHT, petWeight);
 
+        // Insert a new row of the pet into the database returning -1 if there was an error
         long newRowId = db.insert(PetEntry.TABLE_NAME, null, values);
         String message;
         if (newRowId == -1) {
@@ -179,6 +180,7 @@ public class EditorActivity extends AppCompatActivity {
             message = "Pet saved with id: " + newRowId;
         }
 
+        // Show a toast message whether or not the insertion was successful
         Toast.makeText(this, message, Toast.LENGTH_LONG).show();
 
     }
