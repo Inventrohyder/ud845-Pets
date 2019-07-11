@@ -29,7 +29,7 @@ public class CatalogActivity extends AppCompatActivity {
         setContentView(R.layout.activity_catalog);
 
         // Setup FAB to open EditorActivity
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -54,10 +54,8 @@ public class CatalogActivity extends AppCompatActivity {
      * the pets database.
      */
     private void displayDatabaseInfo() {
-        // Create and/or open a database to read from it
-        SQLiteDatabase db = mMDbHelper.getReadableDatabase();
-
-        // Get a cursor that returns all the rows in the pets table
+        // Define a projection that specifies which columns from the database
+        // you will actually use after this query.
         String[] projection = {
                 PetEntry._ID,
                 PetEntry.COLUMN_PET_NAME,
@@ -66,15 +64,16 @@ public class CatalogActivity extends AppCompatActivity {
                 PetEntry.COLUMN_PET_WEIGHT
         };
 
-        Cursor cursor = db.query(
-                PetEntry.TABLE_NAME,
-                projection,
-                null,
-                null,
-                null,
-                null,
-                null
-        );
+        // Perform a query on the provider using the ContentResolver.
+        // Use the {@link PetEntry#CONTENT_URI} to access the pet data.
+        Cursor cursor = getContentResolver()
+                .query(
+                        PetEntry.CONTENT_URI,   // The content URI of the pets table
+                        projection,             // The columns to return for each row
+                        null,          // Selection criteria
+                        null,       // Selection criteria
+                        null           // The sort order for the returned rows
+                );
 
         TextView displayView = findViewById(R.id.text_view_pet);
 
