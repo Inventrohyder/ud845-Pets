@@ -7,9 +7,15 @@ import android.content.UriMatcher;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
+import android.os.Build;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
+
 import com.example.android.pets.data.PetContract.PetEntry;
+
+import java.util.Objects;
 
 /**
  * {@link ContentProvider} for Pets app.
@@ -73,8 +79,9 @@ public class PetProvider extends ContentProvider {
     /**
      * Perform the query for the given URI. Use the given projection, selection, selection arguments, and sort order.
      */
+    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     @Override
-    public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs,
+    public Cursor query(@NonNull Uri uri, String[] projection, String selection, String[] selectionArgs,
                         String sortOrder) {
         // Get readable database
         SQLiteDatabase database = mDbHelper.getReadableDatabase();
@@ -112,21 +119,27 @@ public class PetProvider extends ContentProvider {
             default:
                 throw new IllegalArgumentException("Cannot query unknown URI " + uri);
         }
+
+        // Set notification URI on the Cursor,
+        // so we know what content URI the Cursor was created for.
+        // If the data at this URI changes, then we know we need to update the Cursor.
+        cursor.setNotificationUri(Objects.requireNonNull(getContext()).getContentResolver(), uri);
+
+        // Return the cursor
         return cursor;
     }
 
     /**
      * Insert new data into the provider with the given ContentValues.
      */
+    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     @Override
-    public Uri insert(Uri uri, ContentValues contentValues) {
+    public Uri insert(@NonNull Uri uri, ContentValues contentValues) {
         final int match = sUriMatcher.match(uri);
-        switch (match) {
-            case PETS:
-                return insertPet(uri, contentValues);
-            default:
-                throw new IllegalArgumentException("Insertion is not supported for " + uri);
+        if (match == PETS) {
+            return insertPet(uri, contentValues);
         }
+        throw new IllegalArgumentException("Insertion is not supported for " + uri);
     }
 
     /**
@@ -134,7 +147,8 @@ public class PetProvider extends ContentProvider {
      * for that specific row in the database.
      */
 
-    private Uri insertPet(Uri uri, ContentValues values) {
+    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
+    private Uri insertPet(@NonNull Uri uri, ContentValues values) {
         // Check that the name is not null
         String name = values.getAsString(PetEntry.COLUMN_PET_NAME);
         if (name == null || name.isEmpty()) {
@@ -166,6 +180,9 @@ public class PetProvider extends ContentProvider {
             return null;
         }
 
+        // Notify all listeners that the data has changed for the pet content URI
+        Objects.requireNonNull(getContext()).getContentResolver().notifyChange(uri, null);
+
         // Return the new URI with the ID (of the newly inserted row) appended at the end
         return ContentUris.withAppendedId(uri, id);
     }
@@ -173,8 +190,9 @@ public class PetProvider extends ContentProvider {
     /**
      * Updates the data at the given selection and selection arguments, with the new ContentValues.
      */
+    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     @Override
-    public int update(Uri uri, ContentValues contentValues, String selection,
+    public int update(@NonNull Uri uri, ContentValues contentValues, String selection,
                       String[] selectionArgs) {
         final int match = sUriMatcher.match(uri);
         switch (match) {
@@ -197,7 +215,8 @@ public class PetProvider extends ContentProvider {
      * specified in the selection and selection arguments (which could be 0 or 1 or more pets).
      * Return the number of rows that were successfully updated.
      */
-    private int updatePet(Uri uri, ContentValues values, String selection, String[] selectionArgs) {
+    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
+    private int updatePet(@NonNull Uri uri, ContentValues values, String selection, String[] selectionArgs) {
 
         // If there are no values to update, then don't try to update the database
         if (values.size() == 0) {
@@ -231,44 +250,63 @@ public class PetProvider extends ContentProvider {
             }
         }
 
-        // No need to check the breed, any value is valid (including null).
-
-
         // Get WriteAble database
         SQLiteDatabase database = mDbHelper.getWritableDatabase();
 
+        // Perform the update on the database and get the number of rows affected
+        int rowsAffected = database.update(PetEntry.TABLE_NAME, values, selection, selectionArgs);
+
+        // If 1 or more rows were updated, then notify all listeners that the data at the
+        // given URI has changed
+        if (rowsAffected != 0) {
+            Objects.requireNonNull(getContext()).getContentResolver().notifyChange(uri, null);
+        }
+
         // Returns the number of database rows affected by the update statement
-        return database.update(PetEntry.TABLE_NAME, values, selection, selectionArgs);
+        return rowsAffected;
     }
 
     /**
      * Delete the data at the given selection and selection arguments.
      */
+    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     @Override
-    public int delete(Uri uri, String selection, String[] selectionArgs) {
+    public int delete(@NonNull Uri uri, String selection, String[] selectionArgs) {
         // Get writeable database
         SQLiteDatabase database = mDbHelper.getWritableDatabase();
+        int rowsDeleted;
 
         final int match = sUriMatcher.match(uri);
         switch (match) {
             case PETS:
                 // Delete all rows that match the selection and selection args
-                return database.delete(PetEntry.TABLE_NAME, selection, selectionArgs);
+                rowsDeleted = database.delete(PetEntry.TABLE_NAME, selection, selectionArgs);
+                break;
             case PET_ID:
                 // Delete a single row given by the ID in the URI
                 selection = PetEntry._ID + "=?";
                 selectionArgs = new String[]{String.valueOf(ContentUris.parseId(uri))};
-                return database.delete(PetEntry.TABLE_NAME, selection, selectionArgs);
+                rowsDeleted = database.delete(PetEntry.TABLE_NAME, selection, selectionArgs);
+                break;
             default:
                 throw new IllegalArgumentException("Deletion is not supported for " + uri);
         }
+
+        // If 1 or more rows were deleted, then notify all listeners that the data at the
+        // given URI has changed
+        if (rowsDeleted != 0) {
+            // Notify all listeners that the data has changed for the pet content URI
+            Objects.requireNonNull(getContext()).getContentResolver().notifyChange(uri, null);
+        }
+
+        return rowsDeleted;
     }
 
     /**
      * Returns the MIME type of data for the content URI.
      */
     @Override
-    public String getType(Uri uri) {
+    public String getType(@NonNull Uri uri) {
         final int match = sUriMatcher.match(uri);
         switch (match) {
             case PETS:
