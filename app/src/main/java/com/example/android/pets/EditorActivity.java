@@ -79,6 +79,7 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
      */
     private int mGender = 0;
     private Uri mCurrentPetUri;
+    private boolean mEditMode;
 
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     @Override
@@ -92,8 +93,10 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
 
         if (mCurrentPetUri == null) {
             setTitle(R.string.editor_activity_title_new_pet);
+            mEditMode = false;
         } else {
             setTitle(R.string.editor_activity_title_edit_pet);
+            mEditMode = true;
             LoaderManager.getInstance(this).initLoader(PET_LOADER, null, this);
         }
 
@@ -160,7 +163,7 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
             // Respond to a click on the "Save" menu option
             case R.id.action_save:
                 // Insert pet into the Database
-                insertPet();
+                savePet();
                 // Close activity
                 finish();
                 return true;
@@ -177,7 +180,7 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         return super.onOptionsItemSelected(item);
     }
 
-    private void insertPet() {
+    private void savePet() {
         // Read from input fields
         // Use trim to eliminate and leading and trailing white spaces
         String petName = mNameEditText.getText().toString().trim();
@@ -190,17 +193,28 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         values.put(PetEntry.COLUMN_PET_GENDER, mGender);
         values.put(PetEntry.COLUMN_PET_WEIGHT, petWeight);
 
-        // Insert a new pet into the provider, returning the content URI for the new pet.
-        Uri newUri = getContentResolver().insert(PetEntry.CONTENT_URI, values);
+        boolean failed = false;
+        int message;
+        if (mEditMode) {
+            // Update a pet into the provider returning the number of pets updated
+            int petsUpdated = getContentResolver().update(mCurrentPetUri, values, null, null);
+            if (petsUpdated == 0) failed = true;
+            message = R.string.editor_update_pet_successful;
+        } else {
+            // Insert a new pet into the provider, returning the content URI for the new pet.
+            Uri newUri = getContentResolver().insert(PetEntry.CONTENT_URI, values);
+            if (newUri == null) failed = true;
+            message = R.string.editor_insert_pet_successful;
+        }
 
         // Show a toast message depending on whether or not the insertion was successful
-        if (newUri == null) {
+        if (failed) {
             // If the new content URI is null, then there was an error with insertion.
             Toast.makeText(this, getString(R.string.editor_insert_pet_failed),
                     Toast.LENGTH_SHORT).show();
         } else {
             // Otherwise, the insertion was successful and we can display a toast.
-            Toast.makeText(this, getString(R.string.editor_insert_pet_successful),
+            Toast.makeText(this, getString(message),
                     Toast.LENGTH_SHORT).show();
         }
     }
