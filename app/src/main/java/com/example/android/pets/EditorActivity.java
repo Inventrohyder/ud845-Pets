@@ -162,8 +162,11 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         switch (item.getItemId()) {
             // Respond to a click on the "Save" menu option
             case R.id.action_save:
-                // Insert pet into the Database
-                savePet();
+                if (!empty()) {
+                    // Insert pet into the Database
+                    savePet();
+                }
+
                 // Close activity
                 finish();
                 return true;
@@ -180,12 +183,29 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         return super.onOptionsItemSelected(item);
     }
 
+    /**
+     * Checks if the user input any data
+     *
+     * @return True if no data was input; false otherwise
+     */
+    private boolean empty() {
+        return mCurrentPetUri == null
+                && TextUtils.isEmpty(mNameEditText.getText())
+                && TextUtils.isEmpty(mBreedEditText.getText())
+                && mGenderSpinner.getSelectedItemPosition() == 0
+                && TextUtils.isEmpty(mWeightEditText.getText());
+    }
+
     private void savePet() {
         // Read from input fields
         // Use trim to eliminate and leading and trailing white spaces
         String petName = mNameEditText.getText().toString().trim();
         String petBreed = mBreedEditText.getText().toString().trim();
-        int petWeight = Integer.parseInt(mWeightEditText.getText().toString().trim());
+
+        int petWeight = 0;
+        if (!TextUtils.isEmpty(mWeightEditText.getText())) {
+            petWeight = Integer.parseInt(mWeightEditText.getText().toString().trim());
+        }
 
         ContentValues values = new ContentValues();
         values.put(PetEntry.COLUMN_PET_NAME, petName);
