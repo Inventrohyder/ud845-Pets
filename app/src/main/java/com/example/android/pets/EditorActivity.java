@@ -17,8 +17,10 @@ package com.example.android.pets;
 
 import android.content.ContentValues;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -28,6 +30,7 @@ import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.Toast;
 
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.NavUtils;
 
@@ -37,6 +40,11 @@ import com.example.android.pets.data.PetContract.PetEntry;
  * Allows user to create a new pet or edit an existing one.
  */
 public class EditorActivity extends AppCompatActivity {
+
+    /**
+     * The constant tag to use in logging
+     */
+    final String TAG = this.getClass().getSimpleName();
 
     /**
      * EditText field to enter the pet's name
@@ -64,10 +72,21 @@ public class EditorActivity extends AppCompatActivity {
      */
     private int mGender = 0;
 
+    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_editor);
+
+        Uri currentPetUri = getIntent().getData();
+
+        Log.i(TAG, "onCreate: intent data uri -> " + currentPetUri);
+
+        if (currentPetUri == null) {
+            setTitle(R.string.editor_activity_title_new_pet);
+        } else {
+            setTitle(R.string.editor_activity_title_edit_pet);
+        }
 
         // Find all relevant views that we will need to read user input from
         mNameEditText = findViewById(R.id.edit_pet_name);
