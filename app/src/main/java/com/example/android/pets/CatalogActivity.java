@@ -9,7 +9,12 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ListView;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.loader.app.LoaderManager;
+import androidx.loader.content.CursorLoader;
+import androidx.loader.content.Loader;
 
 import com.example.android.pets.data.PetContract.PetEntry;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -17,7 +22,10 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 /**
  * Displays list of pets that were entered and stored in the app.
  */
-public class CatalogActivity extends AppCompatActivity {
+public class CatalogActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor> {
+
+    public static final int PET_LOADER = 0;
+    private PetCursorAdapter mCursorAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,39 +42,7 @@ public class CatalogActivity extends AppCompatActivity {
             }
         });
 
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-        displayDatabaseInfo();
-    }
-
-    /**
-     * Temporary helper method to display information in the onscreen TextView about the state of
-     * the pets database.
-     */
-    private void displayDatabaseInfo() {
-        // Define a projection that specifies which columns from the database
-        // you will actually use after this query.
-        String[] projection = {
-                PetEntry._ID,
-                PetEntry.COLUMN_PET_NAME,
-                PetEntry.COLUMN_PET_BREED,
-                PetEntry.COLUMN_PET_GENDER,
-                PetEntry.COLUMN_PET_WEIGHT
-        };
-
-        // Perform a query on the provider using the ContentResolver.
-        // Use the {@link PetEntry#CONTENT_URI} to access the pet data.
-        Cursor cursor = getContentResolver()
-                .query(
-                        PetEntry.CONTENT_URI,   // The content URI of the pets table
-                        projection,             // The columns to return for each row
-                        null,          // Selection criteria
-                        null,       // Selection criteria
-                        null           // The sort order for the returned rows
-                );
+        LoaderManager.getInstance(this).initLoader(PET_LOADER, null, this);
 
         // Find the list view to be populated with the pet data
         ListView petListView = findViewById(R.id.list);
@@ -76,11 +52,15 @@ public class CatalogActivity extends AppCompatActivity {
         petListView.setEmptyView(emptyView);
 
         // Setup an Adapter to create a list item for each row of pet data in the Cursor.
-        PetCursorAdapter petCursorAdapter = new PetCursorAdapter(this, cursor);
-
+        mCursorAdapter = new PetCursorAdapter(this, null);
         // Attach the adapter to the ListView.
-        petListView.setAdapter(petCursorAdapter);
+        petListView.setAdapter(mCursorAdapter);
 
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
     }
 
     @Override
@@ -99,7 +79,6 @@ public class CatalogActivity extends AppCompatActivity {
             case R.id.action_insert_dummy_data:
                 // Do nothing for now
                 insertData();
-                displayDatabaseInfo();
                 return true;
             // Respond to a click on the "Delete all entries" menu option
             case R.id.action_delete_all_entries:
@@ -126,5 +105,37 @@ public class CatalogActivity extends AppCompatActivity {
         getContentResolver().insert(PetEntry.CONTENT_URI, values);
 
 
+    }
+
+    @NonNull
+    @Override
+    public Loader<Cursor> onCreateLoader(int id, @Nullable Bundle args) {
+
+        // Define a projection that specifies which columns from the database
+        // you will actually use after this query.
+        String[] projection = {
+                PetEntry._ID,
+                PetEntry.COLUMN_PET_NAME,
+                PetEntry.COLUMN_PET_BREED
+        };
+
+        return new CursorLoader(this,
+                PetEntry.CONTENT_URI,   // The content URI of the pets table
+                projection,             // The columns to return for each row
+                null,         // Selection criteria
+                null,     // Selection criteria
+                null         // The sort order for the returned rows
+        );
+    }
+
+    @Override
+    public void onLoadFinished(@NonNull Loader<Cursor> loader, Cursor data) {
+        // Update {@link PetCursorAdapter} with this new cursor containing updated data
+        mCursorAdapter.changeCursor(data);
+    }
+
+    @Override
+    public void onLoaderReset(@NonNull Loader<Cursor> loader) {
+        mCursorAdapter.changeCursor(null);
     }
 }
