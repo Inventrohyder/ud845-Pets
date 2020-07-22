@@ -52,6 +52,7 @@ import com.example.android.pets.data.PetContract.PetEntry;
 public class EditorActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor> {
 
     public static final int PET_LOADER = 0;
+
     /**
      * The constant tag to use in logging
      */
