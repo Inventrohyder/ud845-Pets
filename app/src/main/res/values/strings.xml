@@ -100,4 +100,5 @@
 
     <!-- Dialog message to ask the user to confirm deleting all the pets [CHAR LIMIT=NONE] -->
     <string name="delete_all_dialog_msg">Delete all the pets in the database?</string>
+    <string name="breed_unknown">Unknown breed</string>
 </resources>
